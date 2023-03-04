@@ -37,7 +37,7 @@ exports.message_create_post = [
 ]
 
 exports.message_delete = (req, res, next) =>{
-    Message.deleteOne({_id: req.body._id}).then(function(){
+    Message.deleteOne({_id: req.params.id}).then(function(){
         return res.status(200).json({message: 'Deletion successful'});
     }).catch(function(err){
         return next(err);
