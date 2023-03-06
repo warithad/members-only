@@ -18,7 +18,14 @@ const newToken = (user) =>{
 }
 
 const verifyToken = (token) =>{
-
+    return new Promise((resolve, reject) =>{
+        jwt.verify(token, jwt_secret, (err, payload) =>{
+            if(err){
+                return reject(err);
+            }
+            resolve(payload);
+        })
+    })
 }
 
 exports.signup = [
@@ -107,5 +114,37 @@ exports.signin = [
 ]
 
 exports.protect = async (req, res, next) =>{
-    
+    if(!req.headers.authorization){
+        return res.status(401).json({message: "Not authorized"})
+    }
+    const token = req.headers.authorization.split(' ')[1];
+
+    if(!token){
+        return res.status(401).json({message: "Not authorized"})
+    }
+    try{
+        const payload = await verifyToken(token);
+
+        if(!payload){
+            return res.status(401).json({message: "Not authorized"})
+        }
+
+        const user = await User.findById(payload.id)
+                            .select('-password')
+                            .exec();
+        if(!user){
+            return res.status(401).json({message: "Not authorized"})
+        }
+        
+        req.user = user;
+
+        next();
+    }catch(err){
+        console.log(err);
+        if(err instanceof Error && err.message === 'jwt expired'){
+            return res.status(401).json({message: "Not authorized"})
+        }
+        res.status(500)
+        next(err);
+    }
 }
